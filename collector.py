@@ -4,18 +4,19 @@
 ไม่มีการสั่งเปลี่ยนสถานะ process ใดๆ (ส่วนนั้นเป็นของ actions_*.py)
 
 วิธีใช้:
-    from collector import Collector
-    c = Collector()
-    snap = c.collect()          # ครั้งแรก cpu_percent จะเป็น None (ยังไม่มีค่าก่อนหน้าไว้เทียบ)
+    from collector import get_snapshot
+    snap = get_snapshot()       # ครั้งแรก cpu_percent จะเป็น None (ยังไม่มีค่าก่อนหน้าไว้เทียบ)
     time.sleep(1)
-    snap = c.collect()          # ครั้งที่สองเป็นต้นไปจึงมี cpu_percent
+    snap = get_snapshot()       # ครั้งที่สองเป็นต้นไปจึงมี cpu_percent
 
 ทดลองรันเดี่ยวๆ:  python collector.py
 """
+
 from __future__ import annotations
 
 import sys
 import time
+import threading
 from typing import Any, Callable, Optional
 
 import psutil
@@ -23,6 +24,8 @@ import psutil
 from contract import (
     CONTRACT_VERSION,
     CPU_PERCENT_NORMALIZED_BY_CORES,
+    PRIORITY_MAP_UNIX,
+    PRIORITY_MAP_WINDOWS,
     ProcessInfo,
     ProcessNode,
     Snapshot,
@@ -61,46 +64,22 @@ def normalize_state(raw: Optional[str]) -> str:
 
 
 # ---------- Priority (ค่าดิบของ OS -> ระดับนามธรรม) ----------
-# ตารางต้องตรงกับ DECISIONS.md D2 และ actions_*.py
-
-PRIORITY_TO_NICE = {
-    "low": 19,
-    "below_normal": 10,
-    "normal": 0,
-    "above_normal": -5,
-    "high": -10,
-}
-
-_WINDOWS_CLASS_NAMES = {
-    "low": "IDLE_PRIORITY_CLASS",
-    "below_normal": "BELOW_NORMAL_PRIORITY_CLASS",
-    "normal": "NORMAL_PRIORITY_CLASS",
-    "above_normal": "ABOVE_NORMAL_PRIORITY_CLASS",
-    "high": "HIGH_PRIORITY_CLASS",
-}
 
 
 def _windows_class_map() -> dict[int, str]:
-    """ค่าคงที่ของ Windows มีใน psutil เฉพาะบน Windows จึงอ่านตอนเรียกใช้ (บน OS อื่นได้ dict ว่าง)"""
-    result: dict[int, str] = {}
-    for level, const_name in _WINDOWS_CLASS_NAMES.items():
-        if hasattr(psutil, const_name):
-            result[int(getattr(psutil, const_name))] = level
-    return result
+    """คืนค่า dict สำหรับแปลง Priority Class ของ Windows กลับเป็นระดับนามธรรม"""
+    return {v: k for k, v in PRIORITY_MAP_WINDOWS.items()}
 
 
 def abstract_priority(raw: Optional[int], platform: str) -> Optional[str]:
-    """แปลงค่าดิบ (nice / Priority Class) เป็น low..high; อ่านไม่ได้หรือไม่ตรงตาราง -> None
-
-    Windows: ต้องตรงกับ Priority Class ในตาราง (REALTIME ไม่อยู่ในตาราง จึงได้ None
-             แต่ค่าดิบยังเก็บอยู่ใน nice_or_priority)
-    Unix:    เลือกระดับที่ค่า nice ใกล้ที่สุด
-    """
+    """แปลงค่าดิบ (nice / Priority Class) เป็น low..high; อ่านไม่ได้หรือไม่ตรงตาราง -> None"""
     if raw is None:
         return None
     if platform == "windows":
         return _windows_class_map().get(int(raw))
-    return min(PRIORITY_TO_NICE, key=lambda level: abs(PRIORITY_TO_NICE[level] - int(raw)))
+    return min(
+        PRIORITY_MAP_UNIX, key=lambda level: abs(PRIORITY_MAP_UNIX[level] - int(raw))
+    )
 
 
 # ---------- CPU% ----------
@@ -291,19 +270,39 @@ class Collector:
         }
 
 
+# ---------- Export สำหรับ Flask (UI) ----------
+
+_global_collector: Optional[Collector] = None
+_collector_lock = threading.Lock()
+
+
+def get_snapshot() -> Snapshot:
+    """ฟังก์ชันหลักสำหรับให้ UI และโมดูลอื่นดึงข้อมูล (Thread-safe)"""
+    global _global_collector
+    with _collector_lock:
+        if _global_collector is None:
+            _global_collector = Collector()
+        return _global_collector.collect()
+
+
 # ---------- ทดลองรันเดี่ยว ----------
 
 if __name__ == "__main__":
-    collector = Collector()
-    collector.collect()  # รอบแรกไว้ตั้งต้นตัวนับ
+    get_snapshot()  # รอบแรกไว้ตั้งต้นตัวนับ
     time.sleep(1.0)
-    snap = collector.collect()
+    snap = get_snapshot()
 
     s = snap["system"]
-    print(f"[{s['platform']}] CPU {s['cpu_percent']}%  RAM {s['mem_percent']}%  "
-          f"processes {s['process_count']}  uptime {s['uptime_s'] / 3600:.1f} h")
+    print(
+        f"[{s['platform']}] CPU {s['cpu_percent']}%  RAM {s['mem_percent']}%  "
+        f"processes {s['process_count']}  uptime {s['uptime_s'] / 3600:.1f} h"
+    )
     print(f"{'PID':>7}  {'CPU%':>6}  {'psutil%':>7}  {'STATE':<10} {'PRIO':<13} NAME")
-    top = sorted(snap["processes"], key=lambda p: p["cpu_percent"] or 0.0, reverse=True)[:10]
+    top = sorted(
+        snap["processes"], key=lambda p: p["cpu_percent"] or 0.0, reverse=True
+    )[:10]
     for p in top:
-        print(f"{p['pid']:>7}  {p['cpu_percent'] or 0:>6}  {p['cpu_percent_psutil'] or 0:>7}  "
-              f"{p['state']:<10} {str(p['priority']):<13} {p['name']}")
+        print(
+            f"{p['pid']:>7}  {p['cpu_percent'] or 0:>6}  {p['cpu_percent_psutil'] or 0:>7}  "
+            f"{p['state']:<10} {str(p['priority']):<13} {p['name']}"
+        )
