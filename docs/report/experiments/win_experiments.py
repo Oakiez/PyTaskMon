@@ -17,11 +17,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 import actions_windows as aw  # noqa: E402
 
 PAUSE = "--pause" in sys.argv
+# ใน venv บน Windows sys.executable เป็นแค่ launcher ที่ไปเปิด python ตัวจริงเป็น process ลูก
+# ถ้าใช้ตัวนั้น เราจะตั้ง priority/suspend ผิดตัว จึงเรียก python ตัวจริงโดยตรง
+PY = getattr(sys, "_base_executable", sys.executable)
 HOG = "while True: pass"      # กิน CPU เต็ม 1 core
 
 
 def spawn(code: str) -> subprocess.Popen:
-    return subprocess.Popen([sys.executable, "-c", code])
+    return subprocess.Popen([PY, "-c", code])
 
 
 def cleanup(*procs):
@@ -109,7 +112,7 @@ def exp_terminate_vs_kill():
         marker = os.path.join(tempfile.gettempdir(), f"pytaskmon_{name}.txt")
         if os.path.exists(marker):
             os.remove(marker)
-        pr = subprocess.Popen([sys.executable, "-c", CLEANUP_CHILD, marker])
+        pr = subprocess.Popen([PY, "-c", CLEANUP_CHILD, marker])
         time.sleep(1)                         # รอให้ลูกลงทะเบียน handler เสร็จ
         fn(pr.pid, confirm=True)
         code = pr.wait(timeout=5)

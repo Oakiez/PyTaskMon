@@ -20,6 +20,10 @@ import actions_windows as aw  # noqa: E402
 
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="actions_windows ทดสอบบน Windows เท่านั้น")
 
+# ใน venv บน Windows sys.executable เป็นแค่ launcher ที่เปิด python ตัวจริงเป็น process ลูก
+# ใช้ python ตัวจริงโดยตรง เพื่อให้ action ไปโดน process ที่ทำงานจริง
+PY = getattr(sys, "_base_executable", sys.executable)
+
 RESULT_KEYS = {"ok", "code", "message", "pid", "action"}
 
 # สคริปต์ของ process จำลอง: วน loop ไปเรื่อยๆ (sleep สั้นๆ ไม่ให้เครื่องร้อนตอนรันเทส)
@@ -29,7 +33,7 @@ DUMMY_CODE = "import time\nwhile True: time.sleep(0.05)"
 @pytest.fixture
 def dummy():
     """สร้าง process จำลอง แล้วเก็บกวาดให้แน่นอนหลังเทสจบ ไม่ว่าเทสจะผ่านหรือพัง"""
-    proc = subprocess.Popen([sys.executable, "-c", DUMMY_CODE])
+    proc = subprocess.Popen([PY, "-c", DUMMY_CODE])
     try:
         yield proc
     finally:
@@ -107,7 +111,7 @@ def test_realtime_not_in_mapping():
 # ---------- process หายไปแล้ว ----------
 
 def test_not_found_after_process_exit():
-    proc = subprocess.Popen([sys.executable, "-c", "pass"])
+    proc = subprocess.Popen([PY, "-c", "pass"])
     proc.wait(timeout=5)
     pid = proc.pid
     assert_result(aw.suspend(pid), "not_found", "suspend", pid)
