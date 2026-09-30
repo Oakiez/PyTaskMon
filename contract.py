@@ -1,11 +1,11 @@
-"""PyTaskMon data contract (DRAFT v0.1)
+"""PyTaskMon data contract v1.0 (ตกลงร่วมกันแล้ว)
 
 ไฟล์นี้คือ "สัญญากลาง" ระหว่าง collector (โอ๊ค), actions (พีช/โชกุน), UI (โชกุน)
 แก้ไขได้ต่อเมื่อทั้ง 3 คนตกลงกันแล้วเท่านั้น และให้ bump เวอร์ชันทุกครั้ง
 """
 from typing import Literal, Optional, TypedDict
 
-CONTRACT_VERSION = "0.1"
+CONTRACT_VERSION = "1.0"
 
 # ---------- ค่าคงที่ที่ตกลงร่วมกัน ----------
 
@@ -22,9 +22,9 @@ State = Literal[
 Priority = Literal["low", "below_normal", "normal", "above_normal", "high"]
 
 # ---------- สูตร CPU% (ต้องล็อกก่อนเขียนโค้ด) ----------
-# ข้อเสนอ: cpu_percent = (delta_cpu_time / delta_wall_time) / logical_cores * 100
+# มติทีม (D1 = A): cpu_percent = (delta_cpu_time / delta_wall_time) / logical_cores * 100
 # -> เพดาน 100% เหมือน Task Manager ของ Windows เทียบข้าม OS ได้ตรงกัน
-# (ถ้าเลือกแบบ top: ไม่หารด้วย cores ให้แก้ค่านี้และแจ้งทีม)
+# (ถ้าจะเปลี่ยนเป็นแบบ top ต้องคุยกับทีม แล้วแก้ค่านี้)
 CPU_PERCENT_NORMALIZED_BY_CORES = True
 
 
