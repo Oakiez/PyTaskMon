@@ -1,7 +1,7 @@
 """PyTaskMon Flask entry point"""
 from typing import get_args
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 import actions
 from collector import get_snapshot
@@ -17,6 +17,10 @@ SIMPLE_ACTIONS = {"suspend", "resume"}
 @app.get("/")
 def index():
     return render_template("index.html")
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(app.static_folder, "favicon.ico", mimetype="image/x-icon")
 
 @app.get("/api/snapshot")
 def api_snapshot():
