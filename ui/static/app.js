@@ -1,11 +1,11 @@
-const REFRESH_MS = 2000;
+const REFRESH_MS = 1000;
 const LEVELS = ["low", "below_normal", "normal", "above_normal", "high"];
 const state = {
   processes: [], sortKey: "cpu_percent", sortDir: -1,
   search: "", stateFilter: "",
   treeMode: false, collapsed: new Set(),
 };
-const HISTORY_LEN = 30;   // 30 จุด x 2 วินาที = ย้อนหลัง 1 นาที
+const HISTORY_LEN = 60;   // 60 จุด x 1 วินาที = ย้อนหลัง 1 นาที
 const history = { cpu: [], ram: [] };
 
 const rowsEl = document.getElementById("rows");

@@ -286,15 +286,40 @@ class Collector:
 
 _global_collector: Optional[Collector] = None
 _collector_lock = threading.Lock()
+_cached_snapshot: Optional[Snapshot] = None
+_sampler_thread: Optional[threading.Thread] = None
+
+
+def _background_sampling_loop(interval: float = 1.0) -> None:
+    global _cached_snapshot
+    while True:
+        try:
+            if _global_collector is not None:
+                _cached_snapshot = _global_collector.collect()
+        except Exception:
+            pass
+        time.sleep(interval)
 
 
 def get_snapshot() -> Snapshot:
-    """ฟังก์ชันหลักสำหรับให้ UI และโมดูลอื่นดึงข้อมูล (Thread-safe)"""
-    global _global_collector
+    """ฟังก์ชันหลักสำหรับให้ UI และโมดูลอื่นดึงข้อมูล (Thread-safe)
+
+    ใช้ Background Daemon Thread คอยสุ่มตัวอย่างเบื้องหลังทุก 1 วินาที
+    ทำให้การเรียก get_snapshot() ตอบสนองได้ทันที (< 5ms) โดยไม่ต้องรอ query
+    """
+    global _global_collector, _sampler_thread, _cached_snapshot
     with _collector_lock:
         if _global_collector is None:
             _global_collector = Collector()
-        return _global_collector.collect()
+            _cached_snapshot = _global_collector.collect()
+            _sampler_thread = threading.Thread(
+                target=_background_sampling_loop, args=(1.0,), daemon=True
+            )
+            _sampler_thread.start()
+
+    if _cached_snapshot is not None:
+        return _cached_snapshot
+    return _global_collector.collect()
 
 
 # ---------- ทดลองรันเดี่ยว ----------
