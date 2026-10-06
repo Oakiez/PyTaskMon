@@ -293,12 +293,14 @@ _sampler_thread: Optional[threading.Thread] = None
 def _background_sampling_loop(interval: float = 1.0) -> None:
     global _cached_snapshot
     while True:
+        t0 = time.monotonic()
         try:
             if _global_collector is not None:
                 _cached_snapshot = _global_collector.collect()
         except Exception:
             pass
-        time.sleep(interval)
+        elapsed = time.monotonic() - t0
+        time.sleep(max(0.05, interval - elapsed))
 
 
 def get_snapshot() -> Snapshot:
