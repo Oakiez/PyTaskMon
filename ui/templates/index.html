@@ -4,15 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PyTaskMon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <header>
-    <h1>PyTaskMon</h1>
+    <h1 class="logo"><span>Py</span>TaskMon</h1>
+    <span id="platform-badge" class="badge" hidden></span>
     <div id="summary">กำลังโหลด…</div>
+    <span id="status"></span>
   </header>
 
-    <section class="charts">
+  <section class="charts">
     <div class="chart-box">
       <div class="chart-title">CPU รวม <span id="cpu-now"></span></div>
       <canvas id="cpu-chart" width="400" height="90"></canvas>
@@ -25,7 +30,16 @@
 
   <div class="toolbar">
     <input id="search" type="search" placeholder="ค้นหาชื่อหรือ PID">
-    <select id="state-filter">
+
+    <div class="state-filter" id="state-filter-group">
+      <button type="button" class="filter-btn active" data-state="">All</button>
+      <button type="button" class="filter-btn" data-state="running">running</button>
+      <button type="button" class="filter-btn" data-state="sleeping">sleeping</button>
+      <button type="button" class="filter-btn" data-state="stopped">stopped</button>
+      <button type="button" class="filter-btn" data-state="zombie">zombie</button>
+    </div>
+    <!-- app.js ยังอ่านค่าจาก select นี้ จึงเก็บไว้แบบซ่อน ปุ่มด้านบนเป็นตัวสั่งเปลี่ยนค่า -->
+    <select id="state-filter" hidden>
       <option value="">ทุก state</option>
       <option value="running">running</option>
       <option value="sleeping">sleeping</option>
@@ -35,29 +49,33 @@
       <option value="idle">idle</option>
       <option value="unknown">unknown</option>
     </select>
-        <label><input type="checkbox" id="tree-toggle"> แสดงเป็นต้นไม้</label>
-    <button id="expand-all" type="button">ขยายทั้งหมด</button>
-    <button id="collapse-all" type="button">ยุบทั้งหมด</button>
-    <span id="tree-hint"></span>
-    <span id="status"></span>
+
+    <div class="tree-controls">
+      <span id="tree-hint"></span>
+      <label><input type="checkbox" id="tree-toggle"> แสดงเป็นต้นไม้</label>
+      <button id="expand-all" type="button">ขยายทั้งหมด</button>
+      <button id="collapse-all" type="button">ยุบทั้งหมด</button>
+    </div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th data-key="pid">PID</th>
-        <th data-key="name">ชื่อ</th>
-        <th data-key="ppid">PPID</th>
-        <th data-key="state">State</th>
-        <th data-key="priority">Priority</th>
-        <th data-key="cpu_percent">CPU %</th>
-        <th data-key="mem_rss">RAM (MB)</th>
-        <th data-key="threads">Threads</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="rows"></tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th data-key="pid">PID</th>
+          <th data-key="name">ชื่อ</th>
+          <th data-key="ppid">PPID</th>
+          <th data-key="state">State</th>
+          <th data-key="priority">Priority</th>
+          <th data-key="cpu_percent">CPU %</th>
+          <th data-key="mem_rss">RAM (MB)</th>
+          <th data-key="threads">Threads</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
 
   <div id="toast" hidden></div>
 
@@ -69,6 +87,22 @@
     </form>
   </dialog>
 
+  <script>
+    // ผูกปุ่มกรอง state กับ <select id="state-filter"> เดิม (app.js ฟัง event "change" ของ select)
+    (function () {
+      var group = document.getElementById("state-filter-group");
+      var select = document.getElementById("state-filter");
+      group.addEventListener("click", function (e) {
+        var btn = e.target.closest(".filter-btn");
+        if (!btn) return;
+        group.querySelectorAll(".filter-btn").forEach(function (b) {
+          b.classList.toggle("active", b === btn);
+        });
+        select.value = btn.dataset.state;
+        select.dispatchEvent(new Event("change"));
+      });
+    })();
+  </script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
