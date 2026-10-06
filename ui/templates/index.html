@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyTaskMon</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>PyTaskMon</h1>
+    <div id="summary">กำลังโหลด…</div>
+  </header>
+
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="ค้นหาชื่อหรือ PID">
+    <select id="state-filter">
+      <option value="">ทุก state</option>
+      <option value="running">running</option>
+      <option value="sleeping">sleeping</option>
+      <option value="disk_sleep">disk_sleep</option>
+      <option value="stopped">stopped</option>
+      <option value="zombie">zombie</option>
+      <option value="idle">idle</option>
+      <option value="unknown">unknown</option>
+    </select>
+    <span id="status"></span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th data-key="pid">PID</th>
+        <th data-key="name">ชื่อ</th>
+        <th data-key="ppid">PPID</th>
+        <th data-key="state">State</th>
+        <th data-key="priority">Priority</th>
+        <th data-key="cpu_percent">CPU %</th>
+        <th data-key="mem_rss">RAM (MB)</th>
+        <th data-key="threads">Threads</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

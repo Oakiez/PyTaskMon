@@ -1,7 +1,7 @@
 """PyTaskMon Flask entry point"""
 from typing import get_args
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 
 import actions
 from collector import get_snapshot
@@ -14,7 +14,10 @@ VALID_LEVELS = set(get_args(Priority))
 CONFIRM_ACTIONS = {"terminate", "kill"}
 SIMPLE_ACTIONS = {"suspend", "resume"}
 
-
+@app.get("/")
+def index():
+    return render_template("index.html")
+    
 @app.get("/api/snapshot")
 def api_snapshot():
     return jsonify(get_snapshot())

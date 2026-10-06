@@ -1,0 +1,15 @@
+body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: #f6f7f9; color: #222; }
+header { display: flex; gap: 24px; align-items: baseline; flex-wrap: wrap; }
+h1 { margin: 0; font-size: 1.4rem; }
+#summary { color: #555; }
+.toolbar { display: flex; gap: 12px; align-items: center; margin: 12px 0; }
+.toolbar input { padding: 6px 10px; width: 260px; }
+.toolbar select { padding: 6px; }
+#status { color: #888; font-size: 0.85rem; }
+table { border-collapse: collapse; width: 100%; background: #fff; }
+th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+th { cursor: pointer; user-select: none; background: #fafafa; position: sticky; top: 0; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.state-zombie { background: #ffe3e3; }
+tr.state-stopped { background: #fff4d6; }
+.dash { color: #aaa; }
