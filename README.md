@@ -23,7 +23,7 @@
 ## ✨ ฟีเจอร์หลัก (Key Features)
 
 - **📊 Real-time PCB Monitor:** แสดงข้อมูลสำคัญของ Process ครบถ้วน (PID, PPID, Process State, Abstract Priority, CPU%, Memory RSS/VMS, Threads)
-- **⚡ Dual CPU Calculation:** คำนวณค่า CPU% อิสระจากผลต่างเวลา $(\Delta\text{cpu\_time} / \Delta\text{wall\_time}) / \text{cores} \times 100$ ควบคู่กับการเทียบเคียงค่าจาก `psutil`
+- **⚡ Dual CPU Calculation:** คำนวณค่า CPU% อิสระจากผลต่างเวลา `((Δcpu_time / Δwall_time) / cores) × 100%` ควบคู่กับการเทียบเคียงค่าจาก `psutil`
 - **🌲 Process Tree Visualization:** แสดงความสัมพันธ์ลำดับชั้น Process พ่อ-ลูก (Parent-Child Hierarchy)
 - **🕹️ Cross-Platform Process Control:**
   - **Kill Process:** ปิด Process พร้อม Modal ยืนยันความปลอดภัย
@@ -41,7 +41,7 @@
 |---|---|---|
 | **Process State Control** | Win32 API (`SuspendThread` / `ResumeThread` หรือ Native NT API) | POSIX Signals (`SIGSTOP`, `SIGCONT`) |
 | **Process Termination** | `TerminateProcess(hProcess, exitCode)` | Signals (`SIGTERM` ร้องขอ / `SIGKILL` บังคับปิด) |
-| **Priority Mechanism** | Priority Classes (`IDLE`, `BELOW_NORMAL`, `NORMAL`, `ABOVE_NORMAL`, `HIGH_PRIORITY_CLASS`) | Nice Values (ช่วงค่า $-20$ ถึง $19$) |
+| **Priority Mechanism** | Priority Classes (`IDLE`, `BELOW_NORMAL`, `NORMAL`, `ABOVE_NORMAL`, `HIGH_PRIORITY_CLASS`) | Nice Values (ช่วงค่า `-20` ถึง `19`) |
 | **Zombie / Orphan** | ไม่มี Zombie Process จริง (Handle Table จัดการ lifecycle) | มีสถานะ Zombie (`Z`) จนกว่า Parent จะ `wait()` / Orphan จะถูก Reparent ไปยัง Init/Launchd (`PID 1`) |
 
 ---
