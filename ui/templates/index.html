@@ -12,6 +12,17 @@
     <div id="summary">กำลังโหลด…</div>
   </header>
 
+    <section class="charts">
+    <div class="chart-box">
+      <div class="chart-title">CPU รวม <span id="cpu-now"></span></div>
+      <canvas id="cpu-chart" width="400" height="90"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">RAM รวม <span id="ram-now"></span></div>
+      <canvas id="ram-chart" width="400" height="90"></canvas>
+    </div>
+  </section>
+
   <div class="toolbar">
     <input id="search" type="search" placeholder="ค้นหาชื่อหรือ PID">
     <select id="state-filter">
@@ -24,6 +35,10 @@
       <option value="idle">idle</option>
       <option value="unknown">unknown</option>
     </select>
+        <label><input type="checkbox" id="tree-toggle"> แสดงเป็นต้นไม้</label>
+    <button id="expand-all" type="button">ขยายทั้งหมด</button>
+    <button id="collapse-all" type="button">ยุบทั้งหมด</button>
+    <span id="tree-hint"></span>
     <span id="status"></span>
   </div>
 
@@ -38,10 +53,21 @@
         <th data-key="cpu_percent">CPU %</th>
         <th data-key="mem_rss">RAM (MB)</th>
         <th data-key="threads">Threads</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
   </table>
+
+  <div id="toast" hidden></div>
+
+  <dialog id="confirm-dialog">
+    <p id="confirm-text"></p>
+    <form method="dialog">
+      <button value="cancel">ยกเลิก</button>
+      <button value="ok">ยืนยัน</button>
+    </form>
+  </dialog>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
