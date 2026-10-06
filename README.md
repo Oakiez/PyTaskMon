@@ -44,7 +44,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-จากนั้นเปิดเบราว์เซอร์ที่ `http://127.0.0.1:5000`
+จากนั้นเปิดเบราว์เซอร์ที่ `http://127.0.0.1:5001`
 
 > **ความปลอดภัย:** เซิร์ฟเวอร์ bind ที่ `127.0.0.1` เท่านั้น เพราะมีปุ่มสั่ง kill process
 > อย่าเปิดให้เข้าถึงจากเครื่องอื่นในเครือข่าย
@@ -123,13 +123,13 @@ pytest
 
 ## สถานะ
 
-🚧 อยู่ระหว่างพัฒนา
+✅ ฟีเจอร์หลักพัฒนาครบถ้วน พร้อมสำหรับการ Demo
 
 - [x] ตั้ง repo และโครงเริ่มต้น
 - [x] ร่าง data contract (`contract.py` v0.1)
-- [ ] ตกลง data contract, สูตร CPU%, priority mapping
-- [ ] Data Layer (`collector.py`)
-- [ ] Actions Layer (Windows / Unix)
-- [ ] Web dashboard
-- [ ] Zombie / orphan demo
-- [ ] รายงานและสไลด์
+- [x] ตกลง data contract, สูตร CPU%, priority mapping
+- [x] Data Layer (`collector.py`)
+- [x] Actions Layer (Windows / Unix)
+- [x] Web dashboard
+- [x] Zombie / orphan demo (Unix)
+- [ ] รายงานและสไลด์ (พีช)

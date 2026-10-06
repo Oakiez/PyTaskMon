@@ -155,8 +155,9 @@ class Collector:
         # (pid, create_time) -> (cpu_time_s, เวลา monotonic ตอนอ่าน)
         # ใช้ create_time ร่วมกับ pid เพราะ PID ถูกนำกลับมาใช้ซ้ำได้
         self._prev: dict[tuple[int, Optional[float]], tuple[float, float]] = {}
-        # เรียกครั้งแรกเพื่อ "ตั้งต้น" ตัวนับของ psutil (ค่าที่ได้ครั้งแรกไม่มีความหมาย)
-        psutil.cpu_percent(interval=None)
+        # คำนวณ CPU รวมของระบบจาก cpu_times() เอง ไม่พึ่ง psutil.cpu_percent() ที่ผูกกับ thread
+        self._prev_sys_times = psutil.cpu_times()
+        self._last_sys_cpu = 0.0
 
     def collect(self) -> Snapshot:
         now_wall = time.time()
@@ -256,10 +257,21 @@ class Collector:
             "platform": self.platform,  # type: ignore[typeddict-item]
         }
 
+    def _system_cpu_percent(self) -> float:
+        cur = psutil.cpu_times()
+        prev, self._prev_sys_times = self._prev_sys_times, cur
+        total = sum(cur) - sum(prev)
+        if total <= 0.05:  # ช่วงสั้นเกินไป ใช้ค่าเดิม
+            return self._last_sys_cpu
+        idle = cur.idle - prev.idle
+        pct = (1.0 - idle / total) * 100.0
+        self._last_sys_cpu = round(max(0.0, min(100.0, pct)), 1)
+        return self._last_sys_cpu
+
     def _system_summary(self, process_count: int) -> SystemSummary:
         vm = psutil.virtual_memory()
         return {
-            "cpu_percent": psutil.cpu_percent(interval=None),
+            "cpu_percent": self._system_cpu_percent(),
             "cpu_cores": self.cores,
             "mem_total": vm.total,
             "mem_used": vm.total - vm.available,
@@ -274,15 +286,42 @@ class Collector:
 
 _global_collector: Optional[Collector] = None
 _collector_lock = threading.Lock()
+_cached_snapshot: Optional[Snapshot] = None
+_sampler_thread: Optional[threading.Thread] = None
+
+
+def _background_sampling_loop(interval: float = 1.0) -> None:
+    global _cached_snapshot
+    while True:
+        t0 = time.monotonic()
+        try:
+            if _global_collector is not None:
+                _cached_snapshot = _global_collector.collect()
+        except Exception:
+            pass
+        elapsed = time.monotonic() - t0
+        time.sleep(max(0.05, interval - elapsed))
 
 
 def get_snapshot() -> Snapshot:
-    """ฟังก์ชันหลักสำหรับให้ UI และโมดูลอื่นดึงข้อมูล (Thread-safe)"""
-    global _global_collector
+    """ฟังก์ชันหลักสำหรับให้ UI และโมดูลอื่นดึงข้อมูล (Thread-safe)
+
+    ใช้ Background Daemon Thread คอยสุ่มตัวอย่างเบื้องหลังทุก 1 วินาที
+    ทำให้การเรียก get_snapshot() ตอบสนองได้ทันที (< 5ms) โดยไม่ต้องรอ query
+    """
+    global _global_collector, _sampler_thread, _cached_snapshot
     with _collector_lock:
         if _global_collector is None:
             _global_collector = Collector()
-        return _global_collector.collect()
+            _cached_snapshot = _global_collector.collect()
+            _sampler_thread = threading.Thread(
+                target=_background_sampling_loop, args=(1.0,), daemon=True
+            )
+            _sampler_thread.start()
+
+    if _cached_snapshot is not None:
+        return _cached_snapshot
+    return _global_collector.collect()
 
 
 # ---------- ทดลองรันเดี่ยว ----------
