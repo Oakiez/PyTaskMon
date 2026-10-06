@@ -102,7 +102,7 @@ def test_lower_priority_ok(sleeper):
     assert psutil.Process(sleeper.pid).nice() == 19
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root ลด nice ได้")
+@pytest.mark.skipif(getattr(os, "geteuid", lambda: -1)() == 0, reason="root ลด nice ได้")
 def test_raise_priority_denied_without_root(sleeper):
     a.set_priority(sleeper.pid, "low")
     r = a.set_priority(sleeper.pid, "high")
